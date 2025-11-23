@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Christmas Slot Machine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+  body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(circle at center, #301934 0%, #0d0510 90%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #fff;
+  }
+  .container {
+    width: 360px;
+    background: #4b3383;
+    border-radius: 30px;
+    padding: 20px 15px 40px;
+    box-shadow: 0 8px 25px rgb(255 255 255 / 0.1);
+    text-align: center;
+    position: relative;
+  }
+  h1 { font-weight: 600; margin: 0 0 10px; font-size: 28px; }
+  p.subtitle { margin: 0 0 10px; font-weight: 400; font-size: 16px; color: #d9c9ff; }
+  p.disclaimer { font-size: 14px; color: #ffd700; margin-bottom: 20px; }
+  .slot-machine {
+    background: #b18fff;
+    border-radius: 25px;
+    box-shadow: inset 0 0 40px #5e309d;
+    padding: 15px 15px 40px;
+    position: relative;
+    display: block;
+  }
+  .reels { display: flex; justify-content: space-between; padding: 0 45px; position: relative; }
+  .reel {
+    background: #e7d9ff;
+    border-radius: 20px;
+    width: 90px;
+    height: 140px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 20px #bfabff;
+    border: 3px solid #7e5ede;
+  }
+  .reel-inner {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .symbol {
+    height: 70px;
+    width: 70px;
+    font-size: 52px;
+    line-height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+  }
+  button#spinBtn {
+    margin-top: 30px;
+    background: #5f2ea6;
+    border: none;
+    border-radius: 18px;
+    color: white;
+    font-weight: 600;
+    font-size: 20px;
+    padding: 14px 0;
+    width: 80%;
+    cursor: pointer;
+    box-shadow: 0 5px 15px #6832b1;
+    transition: background-color 0.3s ease;
+  }
+  button#spinBtn:disabled {
+    background: #8b73c1;
+    cursor: not-allowed;
+  }
+  #winPopup {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  #winPopup .popup-content {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    width: 90%;
+    max-width: 320px;
+    color: #220022;
+    text-align: center;
+    box-shadow: 0 0 20px #a354f1;
+  }
+  #winPopup .popup-content h2 { margin-top: 0; }
+  #winPopup img.flyer { width: 100%; border-radius: 12px; margin-top: 10px; }
+  #winPopup a#map-btn {
+    display: inline-block;
+    margin-top: 15px;
+    background: #7e4bba;
+    color: white;
+    font-weight: 600;
+    padding: 10px 25px;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: 0.3s;
+  }
+  #winPopup a#map-btn:hover { background: #a375e8; }
+  #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 10000; }
+  .arrow {
+    position: absolute;
+    top: 50%;
+    width: 0; 
+    height: 0; 
+    border-top: 25px solid transparent;
+    border-bottom: 25px solid transparent;
+    cursor: default;
+    user-select: none;
+  }
+  .arrow.left { left: 10px; border-left: 30px solid #ffd500; border-right: none; transform: translateY(-50%); }
+  .arrow.right { right: 10px; border-right: 30px solid #ffd500; border-left: none; transform: translateY(-50%); }
+
+  @media (max-width: 400px) {
+    .container { width: 95vw; }
+    .reel { width: 28vw; height: 45vw; }
+    .symbol { font-size: 16vw; height: 22vw; line-height: 22vw; }
+    button#spinBtn { width: 95%; font-size: 18px; }
+    .arrow { border-top: 15px solid transparent; border-bottom: 15px solid transparent; }
+    .arrow.left { border-left: 18px solid #ffd500; border-right: none; left: 5px; }
+    .arrow.right { border-right: 18px solid #ffd500; border-left: none; right: 5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Spin & Win!</h1>
+  <p class="subtitle">🎁 Your surprise waits here!</p>
+  <p class="disclaimer">Only 5 attempts allowed</p>
+  <div class="slot-machine" id="slotMachine">
+    <div class="arrow left"></div>
+    <div class="reels">
+      <div class="reel" id="reel1"><div class="reel-inner"></div></div>
+      <div class="reel" id="reel2"><div class="reel-inner"></div></div>
+      <div class="reel" id="reel3"><div class="reel-inner"></div></div>
+    </div>
+    <div class="arrow right"></div>
+  </div>
+  <button id="spinBtn">Spin</button>
+</div>
+
+<div id="winPopup">
+  <div class="popup-content">
+    <h2>🎉 You are invited! 🎉</h2>
+    <img src="lcd.jpeg" alt="Flyer" class="flyer" />
+    <a id="map-btn" href="https://maps.app.goo.gl/LdQ7m3eLDrETKzj48" target="_blank">
+      📍 Event Location
+    </a>
+  </div>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+<audio id="spinSound" src="https://cdn.pixabay.com/download/audio/2021/11/11/audio_72b9e53c02.mp3?filename=slot-machine-spin-6105.mp3" preload="auto"></audio>
+
+<script>
+const pins = ["🎄", "⭐", "🔔", "🧦", "🎁"];
+const reels = [document.getElementById("reel1"), document.getElementById("reel2"), document.getElementById("reel3")];
+let spinCount = 0;
+const spinsAllowed = 5;
+const winningSpin = Math.floor(Math.random() * 5) + 1;
+const spinSound = document.getElementById("spinSound");
+
+// Fill reels with random symbols
+function fillReel(reel, centerSymbol = null) {
+  const inner = reel.querySelector(".reel-inner");
+  inner.innerHTML = "";
+  for (let i = 0; i < 7; i++) {
+    const div = document.createElement("div");
+    div.className = "symbol";
+    if (i === 3 && centerSymbol) {
+      div.textContent = centerSymbol;
+    } else {
+      div.textContent = pins[Math.floor(Math.random() * pins.length)];
+    }
+    inner.appendChild(div);
+  }
+  inner.style.transition = "none";
+  inner.style.transform = "translateY(0)";
+}
+
+function initReels() {
+  reels.forEach(r => fillReel(r));
+}
+
+function spinReel(reel, duration) {
+  return new Promise(resolve => {
+    const inner = reel.querySelector(".reel-inner");
+    inner.style.transition = "none";
+    inner.style.transform = "translateY(0)";
+    void inner.offsetWidth;
+    inner.style.transition = `transform ${duration}ms cubic-bezier(0.22,0.61,0.36,1)`;
+    inner.style.transform = `translateY(-${3*70}px)`;
+    setTimeout(() => resolve(inner.children[3].textContent), duration);
+  });
+}
+
+function updateSpinBtn() {
+  const btn = document.getElementById("spinBtn");
+  if (spinCount >= spinsAllowed) {
+    btn.disabled = true;
+    btn.textContent = "No More Spins";
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Spin";
+  }
+}
+
+document.getElementById("spinBtn").addEventListener("click", async () => {
+  spinCount++;
+  const btn = document.getElementById("spinBtn");
+  btn.disabled = true;
+  btn.textContent = "Spinning";
+  spinSound.currentTime = 0;
+  spinSound.play();
+
+  const centerSymbol = spinCount === winningSpin ? "🎅" : null;
+  reels.forEach(r => fillReel(r, centerSymbol));
+
+  await Promise.all([
+    spinReel(reels[0], 1300),
+    spinReel(reels[1], 1600),
+    spinReel(reels[2], 1900)
+  ]);
+
+  const won = reels.every(r => r.querySelector(".reel-inner").children[3].textContent === "🎅");
+  if (won) {
+    launchConfetti();
+    showWinPopup();
+  }
+
+  updateSpinBtn();
+});
+
+function showWinPopup() { document.getElementById("winPopup").style.display = "flex"; }
+
+const canvas = document.getElementById("confettiCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const pieces = [];
+for (let i=0;i<150;i++){
+  pieces.push({x:Math.random()*canvas.width,y:Math.random()*-canvas.height,size:Math.random()*7+3,color:`hsl(${Math.random()*360},100%,70%)`,speed:Math.random()*3+2});
+}
+function drawConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  pieces.forEach(p=>{p.y+=p.speed;if(p.y>canvas.height)p.y=-10;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);});
+  requestAnimationFrame(drawConfetti);
+}
+function launchConfetti(){
+  drawConfetti();
+  setTimeout(()=>{pieces.forEach(p=>p.speed=0);ctx.clearRect(0,0,canvas.width,canvas.height);},5000);
+}
+
+initReels();
+updateSpinBtn();
+window.addEventListener("resize",()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+</script>
+</body>
+</html>
