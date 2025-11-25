@@ -37,25 +37,28 @@
     display: block;
   }
   .reels { display: flex; justify-content: space-between; padding: 0 45px; position: relative; }
+  
   .reel {
     background: #e7d9ff;
     border-radius: 20px;
     width: 90px;
-    height: 140px;
+    height: 140px; /* Desktop Height */
     overflow: hidden;
     position: relative;
     box-shadow: inset 0 0 20px #bfabff;
     border: 3px solid #7e5ede;
   }
+  
   .reel-inner {
     position: absolute;
     width: 100%;
-    top: 50%;
-    transform: translateY(-50%);
+    /* REMOVED top:50% here to fix mobile alignment issues. We calculate position in JS now. */
+    top: 0; 
     display: flex;
     flex-direction: column;
     align-items: center;
   }
+  
   .symbol {
     height: 70px;
     width: 70px;
@@ -66,6 +69,7 @@
     align-items: center;
     user-select: none;
   }
+
   button#spinBtn {
     margin-top: 30px;
     background: #5f2ea6;
@@ -84,6 +88,8 @@
     background: #8b73c1;
     cursor: not-allowed;
   }
+  
+  /* Popup Styles */
   #winPopup {
     position: fixed;
     inset: 0;
@@ -139,11 +145,14 @@
   }
   #winPopup a#map-btn:hover { background: #a375e8; }
   #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 10000; }
+  
   .arrow { position: absolute; top: 50%; width: 0; height: 0; border-top: 25px solid transparent; border-bottom: 25px solid transparent; cursor: default; user-select: none; }
   .arrow.left { left: 10px; border-left: 30px solid #ffd500; border-right: none; transform: translateY(-50%); }
   .arrow.right { right: 10px; border-right: 30px solid #ffd500; border-left: none; transform: translateY(-50%); }
+  
   @media (max-width: 400px) {
     .container { width: 95vw; }
+    /* Adjusted sizing for better mobile fit */
     .reel { width: 28vw; height: 45vw; }
     .symbol { font-size: 16vw; height: 22vw; line-height: 22vw; }
     button#spinBtn { width: 95%; font-size: 18px; }
@@ -176,7 +185,7 @@
     <h2>🎉 You are invited! 🎉</h2>
     <img src="lcd.jpg" alt="Flyer" class="flyer" />
     <h3 class="video-header">Last Year's Glimpse</h3>
-    
+     
     <video class="reveal-video" controls autoplay loop muted playsinline>
       <source src="reveal.mp4" type="video/mp4">
     </video>
@@ -191,43 +200,83 @@
 <audio id="spinSound" src="https://cdn.pixabay.com/download/audio/2021/11/11/audio_72b9e53c02.mp3?filename=slot-machine-spin-6105.mp3" preload="auto"></audio>
 
 <script>
-const pins = ["🎄", "⭐", "🔔", "🧦", "🎁"];
+const pins = ["🎄", "⭐", "🔔", "🧦", "🎁", "🎅"];
 const reels = [document.getElementById("reel1"), document.getElementById("reel2"), document.getElementById("reel3")];
 let spinCount = 0;
 const spinsAllowed = 5;
-const winningSpin = Math.floor(Math.random() * 5) + 1;
+// Determine which spin will be the lucky one (between 2 and 5)
+const winningSpin = Math.floor(Math.random() * 4) + 2; 
 const spinSound = document.getElementById("spinSound");
 
-function fillReel(reel, centerSymbol = null) {
+// Calculate position to center the 4th symbol (index 3)
+function setPosition(reel) {
+    const symbolH = reel.querySelector(".symbol").offsetHeight;
+    const reelH = reel.offsetHeight;
+    // Math: Center of Reel - Center of Symbol 3
+    // We shift the strip up so Symbol 3 is in the middle
+    const centerOffset = (3.5 * symbolH) - (0.5 * reelH);
+    const inner = reel.querySelector(".reel-inner");
+    inner.style.transform = `translateY(-${centerOffset}px)`;
+}
+
+function fillReel(reel, targetSymbol = null) {
   const inner = reel.querySelector(".reel-inner");
   inner.innerHTML = "";
   for (let i = 0; i < 7; i++) {
     const div = document.createElement("div");
     div.className = "symbol";
-    if (i === 3 && centerSymbol) {
-      div.textContent = centerSymbol;
+    
+    // If it's the middle symbol (index 3) and we have a target, use it
+    if (i === 3 && targetSymbol) {
+      div.textContent = targetSymbol;
     } else {
+      // Pick random symbol
       div.textContent = pins[Math.floor(Math.random() * pins.length)];
     }
     inner.appendChild(div);
   }
+  
+  // Reset Position instantly without animation
   inner.style.transition = "none";
+  // We use a small offset (0) initially or a specific start point to simulate spinning loop
+  // But to keep it simple, we start at "0" which shows the top, then snap to result? 
+  // Better: Start aligned to a previous result.
+  // Simple fix: Reset to 0 (shows indices 0,1) then spin to show index 3
   inner.style.transform = "translateY(0)";
 }
 
 function initReels() {
-  reels.forEach(r => fillReel(r));
+  reels.forEach(r => {
+      fillReel(r);
+      // Immediately align them so they look good on load
+      setPosition(r);
+  });
 }
 
-function spinReel(reel, duration) {
+function spinReel(reel, duration, targetSymbol) {
   return new Promise(resolve => {
     const inner = reel.querySelector(".reel-inner");
+    
+    // 1. Reset to top (simulates loop start)
     inner.style.transition = "none";
     inner.style.transform = "translateY(0)";
+    
+    // Force browser reflow
     void inner.offsetWidth;
+    
+    // 2. Animate to the winning position
+    const symbolH = reel.querySelector(".symbol").offsetHeight;
+    const reelH = reel.offsetHeight;
+    // Calculate the exact center position for index 3
+    const finalPos = (3.5 * symbolH) - (0.5 * reelH);
+
     inner.style.transition = `transform ${duration}ms cubic-bezier(0.22,0.61,0.36,1)`;
-    inner.style.transform = `translateY(-${3*70}px)`;
-    setTimeout(() => resolve(inner.children[3].textContent), duration);
+    inner.style.transform = `translateY(-${finalPos}px)`;
+    
+    // Resolve with the actual symbol text
+    setTimeout(() => {
+        resolve(inner.children[3].textContent);
+    }, duration);
   });
 }
 
@@ -246,23 +295,35 @@ document.getElementById("spinBtn").addEventListener("click", async () => {
   spinCount++;
   const btn = document.getElementById("spinBtn");
   btn.disabled = true;
-  btn.textContent = "Spinning";
+  btn.textContent = "Spinning...";
   spinSound.currentTime = 0;
   spinSound.play();
 
-  const centerSymbol = spinCount === winningSpin ? "🎅" : null;
-  reels.forEach(r => fillReel(r, centerSymbol));
+  // Logic: Is this the forced win turn?
+  let targetForced = null;
+  if (spinCount === winningSpin) {
+      // Pick a random symbol to be the winner (Star, Santa, Bell, etc)
+      targetForced = pins[Math.floor(Math.random() * pins.length)];
+  }
 
+  // Refill reels
+  reels.forEach(r => fillReel(r, targetForced));
+
+  // Spin them
   await Promise.all([
     spinReel(reels[0], 1300),
     spinReel(reels[1], 1600),
     spinReel(reels[2], 1900)
   ]);
 
-  const won = reels.every(r => r.querySelector(".reel-inner").children[3].textContent === "🎅");
-  if (won) {
+  // Check Win: Do all 3 center symbols match?
+  const sym1 = reels[0].querySelector(".reel-inner").children[3].textContent;
+  const sym2 = reels[1].querySelector(".reel-inner").children[3].textContent;
+  const sym3 = reels[2].querySelector(".reel-inner").children[3].textContent;
+
+  if (sym1 === sym2 && sym2 === sym3) {
     launchConfetti();
-    showWinPopup();
+    setTimeout(showWinPopup, 500); // Small delay for effect
     const video = document.querySelector(".reveal-video");
     if(video) { video.play().catch(e => console.log("Autoplay blocked")); } 
   }
@@ -272,6 +333,7 @@ document.getElementById("spinBtn").addEventListener("click", async () => {
 
 function showWinPopup() { document.getElementById("winPopup").style.display = "flex"; }
 
+// Confetti Code
 const canvas = document.getElementById("confettiCanvas");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
@@ -290,9 +352,15 @@ function launchConfetti(){
   setTimeout(()=>{pieces.forEach(p=>p.speed=0);ctx.clearRect(0,0,canvas.width,canvas.height);},5000);
 }
 
+// Initialization
 initReels();
 updateSpinBtn();
-window.addEventListener("resize",()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+// Recalculate positions on resize to keep center alignment
+window.addEventListener("resize",()=>{
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+    reels.forEach(r => setPosition(r));
+});
 </script>
 </body>
 </html>
