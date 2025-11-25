@@ -225,3 +225,142 @@ function fillReel(reel, targetSymbol = null) {
   for (let i = 0; i < 7; i++) {
     const div = document.createElement("div");
     div.className = "symbol";
+    
+    // If it's the middle symbol (index 3) and we have a target, use it
+    if (i === 3 && targetSymbol) {
+      div.textContent = targetSymbol;
+    } else {
+      // Pick random symbol
+      div.textContent = pins[Math.floor(Math.random() * pins.length)];
+    }
+    inner.appendChild(div);
+  }
+  
+  // Reset Position instantly without animation
+  inner.style.transition = "none";
+  // We use a small offset (0) initially or a specific start point to simulate spinning loop
+  // But to keep it simple, we start at "0" which shows the top, then snap to result? 
+  // Better: Start aligned to a previous result.
+  // Simple fix: Reset to 0 (shows indices 0,1) then spin to show index 3
+  inner.style.transform = "translateY(0)";
+}
+
+function initReels() {
+  reels.forEach(r => {
+      fillReel(r);
+      // Immediately align them so they look good on load
+      setPosition(r);
+  });
+}
+
+function spinReel(reel, duration, targetSymbol) {
+  return new Promise(resolve => {
+    const inner = reel.querySelector(".reel-inner");
+    
+    // 1. Reset to top (simulates loop start)
+    inner.style.transition = "none";
+    inner.style.transform = "translateY(0)";
+    
+    // Force browser reflow
+    void inner.offsetWidth;
+    
+    // 2. Animate to the winning position
+    const symbolH = reel.querySelector(".symbol").offsetHeight;
+    const reelH = reel.offsetHeight;
+    // Calculate the exact center position for index 3
+    const finalPos = (3.5 * symbolH) - (0.5 * reelH);
+
+    inner.style.transition = `transform ${duration}ms cubic-bezier(0.22,0.61,0.36,1)`;
+    inner.style.transform = `translateY(-${finalPos}px)`;
+    
+    // Resolve with the actual symbol text
+    setTimeout(() => {
+        resolve(inner.children[3].textContent);
+    }, duration);
+  });
+}
+
+function updateSpinBtn() {
+  const btn = document.getElementById("spinBtn");
+  if (spinCount >= spinsAllowed) {
+    btn.disabled = true;
+    btn.textContent = "No More Spins";
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Spin";
+  }
+}
+
+document.getElementById("spinBtn").addEventListener("click", async () => {
+  spinCount++;
+  const btn = document.getElementById("spinBtn");
+  btn.disabled = true;
+  btn.textContent = "Spinning...";
+  spinSound.currentTime = 0;
+  spinSound.play();
+
+  // Logic: Is this the forced win turn?
+  let targetForced = null;
+  if (spinCount === winningSpin) {
+      // Pick a random symbol to be the winner (Star, Santa, Bell, etc)
+      targetForced = pins[Math.floor(Math.random() * pins.length)];
+  }
+
+  // Refill reels
+  reels.forEach(r => fillReel(r, targetForced));
+
+  // Spin them
+  await Promise.all([
+    spinReel(reels[0], 1300),
+    spinReel(reels[1], 1600),
+    spinReel(reels[2], 1900)
+  ]);
+
+  // Check Win: Do all 3 center symbols match?
+  const sym1 = reels[0].querySelector(".reel-inner").children[3].textContent;
+  const sym2 = reels[1].querySelector(".reel-inner").children[3].textContent;
+  const sym3 = reels[2].querySelector(".reel-inner").children[3].textContent;
+
+  if (sym1 === sym2 && sym2 === sym3) {
+    launchConfetti();
+    setTimeout(showWinPopup, 500); // Small delay for effect
+    const video = document.querySelector(".reveal-video");
+    if(video) { video.play().catch(e => console.log("Autoplay blocked")); } 
+  }
+
+  updateSpinBtn();
+});
+
+function showWinPopup() { document.getElementById("winPopup").style.display = "flex"; }
+
+// Confetti Code
+const canvas = document.getElementById("confettiCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const pieces = [];
+for (let i=0;i<150;i++){
+  pieces.push({x:Math.random()*canvas.width,y:Math.random()*-canvas.height,size:Math.random()*7+3,color:`hsl(${Math.random()*360},100%,70%)`,speed:Math.random()*3+2});
+}
+function drawConfetti() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  pieces.forEach(p=>{p.y+=p.speed;if(p.y>canvas.height)p.y=-10;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);});
+  requestAnimationFrame(drawConfetti);
+}
+function launchConfetti(){
+  drawConfetti();
+  setTimeout(()=>{pieces.forEach(p=>p.speed=0);ctx.clearRect(0,0,canvas.width,canvas.height);},5000);
+}
+
+// Initialization
+initReels();
+updateSpinBtn();
+// Recalculate positions on resize to keep center alignment
+window.addEventListener("resize",()=>{
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+    reels.forEach(r => setPosition(r));
+});
+</script>
+</body>
+</html>
