@@ -6,6 +6,7 @@
 <title>Christmas Gift</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+  
   body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
@@ -15,7 +16,9 @@
     align-items: center;
     height: 100vh;
     color: #fff;
+    overflow: hidden; /* Prevents scrollbars during animation */
   }
+
   .container {
     width: 360px;
     background: #4b3383;
@@ -24,10 +27,14 @@
     box-shadow: 0 8px 25px rgb(255 255 255 / 0.1);
     text-align: center;
     position: relative;
+    z-index: 10;
   }
+
   h1 { font-weight: 600; margin: 0 0 10px; font-size: 28px; }
   p.subtitle { margin: 0 0 10px; font-weight: 400; font-size: 16px; color: #d9c9ff; }
   p.disclaimer { font-size: 14px; color: #ffd700; margin-bottom: 20px; }
+
+  /* Slot Machine Box */
   .slot-machine {
     background: #b18fff;
     border-radius: 25px;
@@ -36,8 +43,15 @@
     position: relative;
     display: block;
   }
-  .reels { display: flex; justify-content: space-between; padding: 0 45px; position: relative; }
+
+  .reels { 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 0 45px; 
+    position: relative; 
+  }
   
+  /* Individual Reel Window */
   .reel {
     background: #e7d9ff;
     border-radius: 20px;
@@ -49,16 +63,18 @@
     border: 3px solid #7e5ede;
   }
   
+  /* The Strip Moving Inside */
   .reel-inner {
     position: absolute;
     width: 100%;
-    /* REMOVED top:50% here to fix mobile alignment issues. We calculate position in JS now. */
     top: 0; 
     display: flex;
     flex-direction: column;
     align-items: center;
+    /* Will be moved via JS */
   }
   
+  /* The Icons */
   .symbol {
     height: 70px;
     width: 70px;
@@ -70,6 +86,7 @@
     user-select: none;
   }
 
+  /* Spin Button */
   button#spinBtn {
     margin-top: 30px;
     background: #5f2ea6;
@@ -89,7 +106,7 @@
     cursor: not-allowed;
   }
   
-  /* Popup Styles */
+  /* POPUP STYLES */
   #winPopup {
     position: fixed;
     inset: 0;
@@ -99,6 +116,7 @@
     align-items: center;
     z-index: 9999;
   }
+  
   #winPopup .popup-content {
     background: white;
     border-radius: 20px;
@@ -114,8 +132,12 @@
     flex-direction: column;
     align-items: center;
   }
+  
   #winPopup h2 { margin-top: 0; font-size: 22px; margin-bottom: 10px; }
+  
+  /* Flyer Image */
   #winPopup img.flyer { width: 100%; border-radius: 12px; margin-bottom: 5px; }
+  
   h3.video-header {
     margin: 10px 0 8px 0;
     font-size: 16px;
@@ -124,14 +146,22 @@
     text-transform: uppercase;
     letter-spacing: 1px;
   }
+
+  /* OPTIMIZED VIDEO STYLE */
   video.reveal-video {
     width: 100%;
+    height: auto;
     border-radius: 12px;
     margin-bottom: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    max-height: 400px; 
-    object-fit: cover;
+    max-height: 400px;
+    /* Keeps video crisp without stretching */
+    object-fit: cover; 
+    /* Black background to prevent white flash before load */
+    background: #000;
   }
+
+  /* Map Button */
   #winPopup a#map-btn {
     display: inline-block;
     background: #7e4bba;
@@ -144,15 +174,18 @@
     margin-bottom: 10px;
   }
   #winPopup a#map-btn:hover { background: #a375e8; }
+  
+  /* Confetti */
   #confettiCanvas { position: fixed; inset: 0; pointer-events: none; z-index: 10000; }
   
+  /* Arrows */
   .arrow { position: absolute; top: 50%; width: 0; height: 0; border-top: 25px solid transparent; border-bottom: 25px solid transparent; cursor: default; user-select: none; }
   .arrow.left { left: 10px; border-left: 30px solid #ffd500; border-right: none; transform: translateY(-50%); }
   .arrow.right { right: 10px; border-right: 30px solid #ffd500; border-left: none; transform: translateY(-50%); }
   
+  /* MOBILE OPTIMIZATION */
   @media (max-width: 400px) {
     .container { width: 95vw; }
-    /* Adjusted sizing for better mobile fit */
     .reel { width: 28vw; height: 45vw; }
     .symbol { font-size: 16vw; height: 22vw; line-height: 22vw; }
     button#spinBtn { width: 95%; font-size: 18px; }
@@ -168,6 +201,7 @@
   <h1>Spin & Win!</h1>
   <p class="subtitle">🎁 Your surprise waits here!</p>
   <p class="disclaimer">Only 5 attempts allowed</p>
+  
   <div class="slot-machine" id="slotMachine">
     <div class="arrow left"></div>
     <div class="reels">
@@ -177,51 +211,14 @@
     </div>
     <div class="arrow right"></div>
   </div>
+  
   <button id="spinBtn">Spin</button>
 </div>
 
 <div id="winPopup">
   <div class="popup-content">
     <h2>🎉 You are invited! 🎉</h2>
+    
     <img src="lcd.jpg" alt="Flyer" class="flyer" />
-    <h3 class="video-header">Last Year's Glimpse</h3>
-     
-    <video class="reveal-video" controls autoplay loop muted playsinline>
-      <source src="reveal.mp4" type="video/mp4">
-    </video>
-
-    <a id="map-btn" href="https://maps.app.goo.gl/LdQ7m3eLDrETKzj48" target="_blank">
-      📍 Event Location
-    </a>
-  </div>
-</div>
-
-<canvas id="confettiCanvas"></canvas>
-<audio id="spinSound" src="https://cdn.pixabay.com/download/audio/2021/11/11/audio_72b9e53c02.mp3?filename=slot-machine-spin-6105.mp3" preload="auto"></audio>
-
-<script>
-const pins = ["🎄", "⭐", "🔔", "🧦", "🎁", "🎅"];
-const reels = [document.getElementById("reel1"), document.getElementById("reel2"), document.getElementById("reel3")];
-let spinCount = 0;
-const spinsAllowed = 5;
-// Determine which spin will be the lucky one (between 2 and 5)
-const winningSpin = Math.floor(Math.random() * 4) + 2; 
-const spinSound = document.getElementById("spinSound");
-
-// Calculate position to center the 4th symbol (index 3)
-function setPosition(reel) {
-    const symbolH = reel.querySelector(".symbol").offsetHeight;
-    const reelH = reel.offsetHeight;
-    // Math: Center of Reel - Center of Symbol 3
-    // We shift the strip up so Symbol 3 is in the middle
-    const centerOffset = (3.5 * symbolH) - (0.5 * reelH);
-    const inner = reel.querySelector(".reel-inner");
-    inner.style.transform = `translateY(-${centerOffset}px)`;
-}
-
-function fillReel(reel, targetSymbol = null) {
-  const inner = reel.querySelector(".reel-inner");
-  inner.innerHTML = "";
-  for (let i = 0; i < 7; i++) {
-    const div = document.createElement("div");
-    div.className = "symbol";
+    
+    <h
